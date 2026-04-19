@@ -585,72 +585,80 @@ DOM.typingDisplay.addEventListener('click', () => {
     renderTypingDisplay();
 });
 
-/* ── Audio Engine & Key Catcher ──────────────────── */
+/* ── Audio Engine ─────────────────────────────────── */
 const AudioEngine = {
   ctx: null,
-  mode: 'none', // none, thock, clicky
-  unlocked: false,
+  mode: 'none',
 
-  async init() {
-    if (!this.ctx) {
+  // Called once on the first user gesture to warm up the context
+  warmUp() {
+    if (this.ctx) return;
+    try {
       this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    if (this.ctx.state === 'suspended') {
-      await this.ctx.resume();
-    }
-    this.unlocked = true;
+    } catch(e) { console.warn('Web Audio not supported'); }
   },
 
-  async play(keyType = 'normal') {
-    if (this.mode === 'none') return;
-    await this.init();
-    if (!this.ctx || this.ctx.state !== 'running') return;
-
-    const t = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-
-    if (this.mode === 'clicky') {
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(keyType === 'space' ? 400 : 600, t);
-      osc.frequency.exponentialRampToValueAtTime(100, t + 0.05);
-
-      gain.gain.setValueAtTime(0.12, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
-
-      osc.start(t);
-      osc.stop(t + 0.05);
-    } else if (this.mode === 'thock') {
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(keyType === 'space' ? 100 : 140, t);
-      osc.frequency.exponentialRampToValueAtTime(30, t + 0.1);
-
-      gain.gain.setValueAtTime(0.3, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
-
-      osc.start(t);
-      osc.stop(t + 0.1);
+  // Ensure context is running (sync browsers resume it synchronously after gesture)
+  ensureRunning() {
+    if (!this.ctx) this.warmUp();
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume(); // fire-and-forget is fine here inside a user gesture
     }
+  },
+
+  play(keyType = 'normal') {
+    if (this.mode === 'none' || !this.ctx) return;
+    if (this.ctx.state === 'suspended') {
+      this.ctx.resume().then(() => this._scheduleSound(keyType));
+      return;
+    }
+    this._scheduleSound(keyType);
+  },
+
+  _scheduleSound(keyType) {
+    try {
+      const t    = this.ctx.currentTime;
+      const osc  = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      if (this.mode === 'clicky') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(keyType === 'space' ? 380 : 580, t);
+        osc.frequency.exponentialRampToValueAtTime(80, t + 0.06);
+        gain.gain.setValueAtTime(0.15, t);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
+        osc.start(t);
+        osc.stop(t + 0.06);
+      } else if (this.mode === 'thock') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(keyType === 'space' ? 90 : 130, t);
+        osc.frequency.exponentialRampToValueAtTime(25, t + 0.12);
+        gain.gain.setValueAtTime(0.35, t);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+        osc.start(t);
+        osc.stop(t + 0.12);
+      }
+    } catch(e) { /* ignore if context was closed */ }
   }
 };
 
-// Unlock AudioContext on first user gesture (required by browsers)
-document.addEventListener('click', () => AudioEngine.init(), { once: true });
-document.addEventListener('keydown', () => AudioEngine.init(), { once: true });
-
-DOM.soundToggle.addEventListener('change', async (e) => {
+// Create the AudioContext as soon as the user interacts (satisfies browser policy)
+DOM.soundToggle.addEventListener('change', (e) => {
   AudioEngine.mode = e.target.value;
-  await AudioEngine.init();
-  if (e.target.value !== 'none') AudioEngine.play('normal'); // Preview
+  if (e.target.value !== 'none') {
+    AudioEngine.warmUp();          // create context on this user gesture
+    AudioEngine.ensureRunning();   // resume if suspended
+    setTimeout(() => AudioEngine.play('normal'), 50); // preview after tiny delay
+  }
 });
 
 document.addEventListener('keydown', e => {
-  // Play sound if printable or functional key
+  // Sound playback
   if (e.key.length === 1 || e.key === 'Backspace' || e.key === 'Enter') {
-     AudioEngine.play(e.key === ' ' ? 'space' : 'normal');
+    AudioEngine.ensureRunning();
+    AudioEngine.play(e.key === ' ' ? 'space' : 'normal');
   }
 
   if (DOM.capsLockWarn) {
@@ -674,6 +682,7 @@ document.addEventListener('keydown', e => {
     }
   }
 });
+
 
 /* ── Game Mode ───────────────────────────────────── */
 let gameWordPool    = [];
