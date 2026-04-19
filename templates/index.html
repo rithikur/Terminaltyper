@@ -21,6 +21,8 @@
 
   <!-- Styles -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo.png') }}" />
 </head>
 
 <body>
@@ -31,7 +33,9 @@
     <!-- Row 1: Brand + Controls -->
     <div class="site-header-top">
       <div class="logo">
-        <div class="logo-icon" aria-hidden="true">T</div>
+        <div class="logo-icon" aria-hidden="true">
+          <img src="{{ url_for('static', filename='images/logo.png') }}" alt="TerminalTyper Logo" style="width:100%;height:100%;object-fit:cover;border-radius:6px;" />
+        </div>
         <div class="logo-text-group">
           <span class="logo-text">Terminal<span>Typer</span></span>
           <span class="logo-tagline">Precision Typing. Real-Time Metrics.</span>

@@ -589,55 +589,62 @@ DOM.typingDisplay.addEventListener('click', () => {
 const AudioEngine = {
   ctx: null,
   mode: 'none', // none, thock, clicky
+  unlocked: false,
 
-  init() {
+  async init() {
     if (!this.ctx) {
       this.ctx = new (window.AudioContext || window.webkitAudioContext)();
     }
     if (this.ctx.state === 'suspended') {
-      this.ctx.resume();
+      await this.ctx.resume();
     }
+    this.unlocked = true;
   },
 
-  play(keyType = 'normal') {
+  async play(keyType = 'normal') {
     if (this.mode === 'none') return;
-    this.init();
-    
+    await this.init();
+    if (!this.ctx || this.ctx.state !== 'running') return;
+
     const t = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    
+
     osc.connect(gain);
     gain.connect(this.ctx.destination);
-    
+
     if (this.mode === 'clicky') {
       osc.type = 'square';
       osc.frequency.setValueAtTime(keyType === 'space' ? 400 : 600, t);
       osc.frequency.exponentialRampToValueAtTime(100, t + 0.05);
-      
-      gain.gain.setValueAtTime(0.1, t);
+
+      gain.gain.setValueAtTime(0.12, t);
       gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
-      
+
       osc.start(t);
       osc.stop(t + 0.05);
     } else if (this.mode === 'thock') {
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(keyType === 'space' ? 120 : 160, t);
-      osc.frequency.exponentialRampToValueAtTime(40, t + 0.08);
-      
-      gain.gain.setValueAtTime(0.25, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
-      
+      osc.frequency.setValueAtTime(keyType === 'space' ? 100 : 140, t);
+      osc.frequency.exponentialRampToValueAtTime(30, t + 0.1);
+
+      gain.gain.setValueAtTime(0.3, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+
       osc.start(t);
-      osc.stop(t + 0.08);
+      osc.stop(t + 0.1);
     }
   }
 };
 
-DOM.soundToggle.addEventListener('change', (e) => {
+// Unlock AudioContext on first user gesture (required by browsers)
+document.addEventListener('click', () => AudioEngine.init(), { once: true });
+document.addEventListener('keydown', () => AudioEngine.init(), { once: true });
+
+DOM.soundToggle.addEventListener('change', async (e) => {
   AudioEngine.mode = e.target.value;
-  AudioEngine.init();
-  AudioEngine.play(); // Preview the sound
+  await AudioEngine.init();
+  if (e.target.value !== 'none') AudioEngine.play('normal'); // Preview
 });
 
 document.addEventListener('keydown', e => {
