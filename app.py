@@ -9,6 +9,7 @@ from sqlalchemy import func
 # ─────────────────────────────────────────────
 
 STANDARD_PARAGRAPHS = [
+    # Original 10
     "The quick brown fox jumps over the lazy dog while the sun sets behind the mountains casting long shadows across the valley floor.",
     "Technology has transformed the way we communicate collaborate and create turning distant dreams into everyday realities for billions of people.",
     "In the quiet library surrounded by towering shelves of ancient books the scholar carefully turned each fragile page seeking hidden knowledge.",
@@ -19,9 +20,31 @@ STANDARD_PARAGRAPHS = [
     "The programmer stared at the terminal screen her fingers dancing over the keyboard as she debugged the final critical section of code.",
     "Artificial intelligence continues to evolve rapidly blurring the line between machine behavior and human cognition in fascinating ways.",
     "Through the fog of uncertainty the expedition team pressed forward guided only by compass stars and the unwavering belief in their mission.",
+    # New 20
+    "Every line of code tells a story of the problem it was written to solve and the mind that spent hours crafting the perfect solution.",
+    "The universe is vast and indifferent yet within it consciousness arose and began asking questions about its own origin and purpose.",
+    "Software architecture is the invisible skeleton of every application shaping its behavior long after the original developers have moved on.",
+    "She typed commands into the terminal with practiced efficiency each keystroke a small act of communication between human and machine.",
+    "Version control systems like git allow teams of engineers to collaborate on massive codebases without stepping on each other's work.",
+    "The rain fell steadily on the city streets washing away the dust of the day and reflecting the amber glow of the streetlights above.",
+    "A database without indexes is like a library without a catalog you can find what you need but it will take far longer than necessary.",
+    "Design patterns are reusable solutions to commonly occurring problems in software design refined through decades of collective experience.",
+    "The compiler translated human readable instructions into machine code bridging the gap between what people think and what computers do.",
+    "Recursion is a technique where a function calls itself to solve progressively smaller versions of the original problem until a base case is reached.",
+    "Network latency the time a packet takes to travel from source to destination determines much of the performance ceiling of distributed systems.",
+    "The open source movement has fundamentally changed how software is built shared and improved creating a global community of contributors.",
+    "Clean code reads like well written prose each function doing exactly one thing its name promising precisely what the body delivers.",
+    "The history of computing is a story of abstraction layers each generation building higher level tools on top of the previous generation's foundations.",
+    "Space exploration demands extraordinary precision a calculation error of one degree compounded over millions of kilometers becomes an insurmountable distance.",
+    "Machine learning models learn patterns from data rather than following explicit instructions allowing computers to recognize images translate languages and predict outcomes.",
+    "The keyboard is the writer's paintbrush and the blank document is the canvas where ideas take shape one deliberate character at a time.",
+    "Cryptography protects the privacy of billions of people every day through elegant mathematics that would take the lifetime of the universe to brute force.",
+    "Debugging is twice as hard as writing the code in the first place so if you write the code as cleverly as you can you are by definition not smart enough to debug it.",
+    "The best software teams are not those with the most talented individuals but those where communication trust and shared purpose create something greater than the sum of their parts.",
 ]
 
 GAME_WORDS = [
+    # Original
     "circuit", "kernel", "voltage", "packet", "buffer", "socket", "thread",
     "malloc", "pointer", "binary", "hexadecimal", "compiler", "debugger",
     "syntax", "runtime", "memory", "cache", "stack", "queue", "signal",
@@ -29,6 +52,17 @@ GAME_WORDS = [
     "opcode", "pipeline", "latency", "bandwidth", "protocol", "firewall",
     "cipher", "hash", "token", "payload", "gateway", "proxy", "cluster",
     "instance", "container", "deploy", "rollback", "namespace", "endpoint",
+    # New additions
+    "variable", "function", "iterator", "decorator", "generator", "exception",
+    "typescript", "interface", "abstract", "inherit", "override", "polymorphism",
+    "algorithm", "recursion", "fibonacci", "quicksort", "mergesort", "heapify",
+    "database", "migration", "indexing", "transaction", "rollback", "checkpoint",
+    "webhook", "graphql", "restful", "swagger", "openapi", "middleware",
+    "docker", "kubernetes", "terraform", "ansible", "jenkins", "pipeline",
+    "lambda", "closure", "callback", "promise", "async", "await",
+    "regex", "pattern", "parser", "lexer", "token", "abstract",
+    "refactor", "linting", "testing", "coverage", "benchmark", "profiler",
+    "monolith", "microservice", "serverless", "headless", "stateless", "idempotent",
 ]
 
 CODE_SNIPPETS = [
@@ -128,6 +162,158 @@ CODE_SNIPPETS = [
             "\n"
             "with ManagedResource('database') as res:\n"
             "    print(f'Using {res.name}')"
+        ),
+    },
+    # New snippets
+    {
+        "language": "python",
+        "label": "Bubble Sort",
+        "code": (
+            "def bubble_sort(arr):\n"
+            "    n = len(arr)\n"
+            "    for i in range(n):\n"
+            "        swapped = False\n"
+            "        for j in range(0, n - i - 1):\n"
+            "            if arr[j] > arr[j + 1]:\n"
+            "                arr[j], arr[j + 1] = arr[j + 1], arr[j]\n"
+            "                swapped = True\n"
+            "        if not swapped:\n"
+            "            break\n"
+            "    return arr\n"
+            "\n"
+            "numbers = [64, 34, 25, 12, 22, 11, 90]\n"
+            "print(bubble_sort(numbers))"
+        ),
+    },
+    {
+        "language": "python",
+        "label": "Decorator Pattern",
+        "code": (
+            "import time\n"
+            "\n"
+            "def timer(func):\n"
+            "    def wrapper(*args, **kwargs):\n"
+            "        start = time.time()\n"
+            "        result = func(*args, **kwargs)\n"
+            "        end = time.time()\n"
+            "        print(f'{func.__name__} took {end - start:.4f}s')\n"
+            "        return result\n"
+            "    return wrapper\n"
+            "\n"
+            "@timer\n"
+            "def slow_function(n):\n"
+            "    return sum(range(n))\n"
+            "\n"
+            "slow_function(1000000)"
+        ),
+    },
+    {
+        "language": "python",
+        "label": "Async HTTP Requests",
+        "code": (
+            "import asyncio\n"
+            "import aiohttp\n"
+            "\n"
+            "async def fetch(session, url):\n"
+            "    async with session.get(url) as response:\n"
+            "        return await response.json()\n"
+            "\n"
+            "async def main():\n"
+            "    urls = [\n"
+            "        'https://api.example.com/users',\n"
+            "        'https://api.example.com/posts',\n"
+            "    ]\n"
+            "    async with aiohttp.ClientSession() as session:\n"
+            "        tasks = [fetch(session, url) for url in urls]\n"
+            "        results = await asyncio.gather(*tasks)\n"
+            "    return results\n"
+            "\n"
+            "asyncio.run(main())"
+        ),
+    },
+    {
+        "language": "python",
+        "label": "Linked List",
+        "code": (
+            "class Node:\n"
+            "    def __init__(self, data):\n"
+            "        self.data = data\n"
+            "        self.next = None\n"
+            "\n"
+            "class LinkedList:\n"
+            "    def __init__(self):\n"
+            "        self.head = None\n"
+            "\n"
+            "    def append(self, data):\n"
+            "        new_node = Node(data)\n"
+            "        if not self.head:\n"
+            "            self.head = new_node\n"
+            "            return\n"
+            "        current = self.head\n"
+            "        while current.next:\n"
+            "            current = current.next\n"
+            "        current.next = new_node\n"
+            "\n"
+            "    def display(self):\n"
+            "        elements = []\n"
+            "        current = self.head\n"
+            "        while current:\n"
+            "            elements.append(current.data)\n"
+            "            current = current.next\n"
+            "        print(' -> '.join(map(str, elements)))"
+        ),
+    },
+    {
+        "language": "python",
+        "label": "Dataclass Example",
+        "code": (
+            "from dataclasses import dataclass, field\n"
+            "from typing import List\n"
+            "\n"
+            "@dataclass\n"
+            "class Student:\n"
+            "    name: str\n"
+            "    age: int\n"
+            "    grades: List[float] = field(default_factory=list)\n"
+            "\n"
+            "    def average(self) -> float:\n"
+            "        if not self.grades:\n"
+            "            return 0.0\n"
+            "        return sum(self.grades) / len(self.grades)\n"
+            "\n"
+            "    def __str__(self) -> str:\n"
+            "        return f'{self.name} (avg: {self.average():.1f})'\n"
+            "\n"
+            "s = Student('Alice', 20, [88.5, 92.0, 79.5])\n"
+            "print(s)"
+        ),
+    },
+    {
+        "language": "python",
+        "label": "Stack Implementation",
+        "code": (
+            "class Stack:\n"
+            "    def __init__(self):\n"
+            "        self._items = []\n"
+            "\n"
+            "    def push(self, item):\n"
+            "        self._items.append(item)\n"
+            "\n"
+            "    def pop(self):\n"
+            "        if self.is_empty():\n"
+            "            raise IndexError('pop from empty stack')\n"
+            "        return self._items.pop()\n"
+            "\n"
+            "    def peek(self):\n"
+            "        if self.is_empty():\n"
+            "            raise IndexError('peek at empty stack')\n"
+            "        return self._items[-1]\n"
+            "\n"
+            "    def is_empty(self):\n"
+            "        return len(self._items) == 0\n"
+            "\n"
+            "    def __len__(self):\n"
+            "        return len(self._items)"
         ),
     },
 ]
