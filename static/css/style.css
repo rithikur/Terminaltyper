@@ -41,7 +41,7 @@
 
 html {
   scroll-behavior: smooth;
-  font-size: 16px;
+  font-size: 18px;
 }
 
 body {
@@ -119,9 +119,10 @@ h4 {
 
 /* ── Layout ─────────────────────────────────────── */
 .app-wrapper {
-  max-width: 1400px;
+  max-width: 1600px;
+  width: 100%;
   margin: 0 auto;
-  padding: 0 40px 80px;
+  padding: 0 48px 80px;
 }
 
 /* ── Header ─────────────────────────────────────── */
@@ -132,8 +133,9 @@ h4 {
   background: rgba(13, 13, 13, 0.95);
   backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border);
-  padding: 0 40px;
-  max-width: 1400px;
+  padding: 0 48px;
+  max-width: 1600px;
+  width: 100%;
   margin: 0 auto;
 }
 
