@@ -263,14 +263,16 @@ function renderTypingDisplay() {
   }
   
   DOM.typingInner.innerHTML = html;
-  
+
+  // Scroll cursor into view using offsetTop (stable, not viewport-relative)
   const cursor = DOM.typingInner.querySelector('.cursor');
   if (cursor) {
-    const parentTop = DOM.typingDisplay.getBoundingClientRect().top;
-    const cursorTop = cursor.getBoundingClientRect().top;
-    const diff = cursorTop - parentTop;
-    if (diff > 80) {
-       DOM.typingInner.style.transform = `translateY(-${diff - 40}px)`;
+    const cursorOffsetTop = cursor.offsetTop;
+    const displayHeight   = DOM.typingDisplay.clientHeight;
+    const currentShift    = parseInt(DOM.typingInner.style.transform.replace(/[^-\d]/g, '') || '0') * -1;
+    // If cursor is below the visible area, shift up
+    if (cursorOffsetTop - currentShift > displayHeight - 48) {
+      DOM.typingInner.style.transform = `translateY(-${Math.max(0, cursorOffsetTop - 48)}px)`;
     }
   }
 }
@@ -344,11 +346,12 @@ DOM.typingInput.addEventListener('input', e => {
   renderTypingDisplay();
   
   if (val.length >= code.length) {
-    // Count correct chars from this completed sentence
+    // Count correct chars from this completed sentence and accumulate
     const sentenceCorrect = countCorrectChars(val.slice(0, code.length), code);
     State.typing.cumulativeCorrect += sentenceCorrect;
-    State.typing.input = "";
-    DOM.typingInput.value = "";
+    // Clear input before loading next snippet to prevent double-count
+    State.typing.input = '';
+    DOM.typingInput.value = '';
     loadStandardNextSnippet();
   }
 });
@@ -380,7 +383,7 @@ function startConsistencyTimer() {
   }, 1000);
 }
 
-async function activateStandardTyping() {
+function activateStandardTyping() {
   if (State.typing.finished) return;
   State.typing.active = true;
   DOM.typingDisplay.classList.add('focused');
@@ -390,34 +393,30 @@ async function activateStandardTyping() {
 async function finishStandardSession() {
   if (State.typing.finished) return;
   State.typing.finished = true;
-  clearInterval(timerInterval);
+  clearInterval(timerInterval);                    // stop timer immediately
   clearInterval(State.typing.consistencyTimer);
   DOM.typingInput.disabled = true;
   DOM.typingDisplay.classList.remove('focused');
-  
+
   const elapsed = Date.now() - State.typing.startTime;
   const code = State.typing.snippet;
   const val  = State.typing.input;
-  
-  // Final Strict WPM calc
-  const wordsTarget = code.split(' ');
-  const wordsTyped  = val.split(' ');
-  let finalCorrectChars = State.typing.cumulativeCorrect;
-  for (let i = 0; i < wordsTyped.length; i++) {
-     if (wordsTyped[i] === wordsTarget[i]) {
-         finalCorrectChars += wordsTyped[i].length + (i < wordsTarget.length - 1 ? 1 : 0);
-     }
-  }
+
+  // Final WPM: add chars from the current in-progress snippet
+  const finalCorrectChars = State.typing.cumulativeCorrect +
+    countCorrectChars(val.slice(0, code.length), code);
 
   const netWpm = calcNetWpm(finalCorrectChars, elapsed);
   const rawWpm = calcRawWpm(State.typing.totalKeystrokes, elapsed);
-  const actualCorrectChars = countCorrectChars(val, code) + (State.typing.cumulativeCorrect || 0);
-  const acc = calcAccuracyMT(actualCorrectChars, State.typing.totalKeystrokes || 1);
-  const dur = timerDur - parseInt(DOM.timerDisplay.textContent);
+  // Accuracy: total correct chars typed / total keystrokes
+  const totalCorrect = State.typing.cumulativeCorrect + countCorrectChars(val, code);
+  const acc = calcAccuracyMT(totalCorrect, State.typing.totalKeystrokes || 1);
+  // Duration is how many seconds actually elapsed (not timer display)
+  const dur = Math.round(elapsed / 1000);
   const cons = calcConsistency(State.typing.wpmHistory);
-  
-  await postResults(netWpm, acc, 'standard', dur > 0 ? dur : timerDur, rawWpm, cons);
-  showResults(netWpm, acc, State.typing.errors, dur > 0 ? dur : timerDur, 'standard', rawWpm, cons);
+
+  await postResults(netWpm, acc, 'standard', dur || timerDur, rawWpm, cons);
+  showResults(netWpm, acc, State.typing.errors, dur || timerDur, 'standard', rawWpm, cons);
 }
 
 DOM.btnRestart.addEventListener('click', loadStandardContent);
@@ -634,6 +633,7 @@ function resetGameState() {
   State.game.wpmTrack   = 0;
   State.game.spawnDelay = 2500;
   State.game.fallDur    = 10000;
+  State.game.sessionStart = null;  // reset session timer
   gameActiveWords       = [];
   gameWordIndex         = 0;
   if (State.game.spawnTimer) clearTimeout(State.game.spawnTimer);
@@ -721,6 +721,8 @@ function gameLoop() {
 }
 
 async function gameOver() {
+  // Guard: prevent double-call (multiple words could expire in the same frame)
+  if (!DOM.btnGameStop.style.display === 'none' && DOM.gameInput.disabled) return;
   if (State.game.spawnTimer) clearTimeout(State.game.spawnTimer);
   cancelAnimationFrame(gameAnimFrame);
   DOM.gameInput.disabled = true;
@@ -728,9 +730,10 @@ async function gameOver() {
   DOM.btnGameStop.style.display  = 'none';
   DOM.gameInput.value = '';
 
-  const wpm  = State.game.score;
-  const acc  = State.game.score > 0
-    ? Math.round((State.game.score / (State.game.score + State.game.missed)) * 100)
+  const totalWords = State.game.score + State.game.missed;
+  const wpm  = State.game.score;   // words destroyed = score
+  const acc  = totalWords > 0
+    ? Math.round((State.game.score / totalWords) * 100)
     : 0;
   const dur  = 0;
 
@@ -785,8 +788,11 @@ DOM.gameInput.addEventListener('keydown', e => {
     State.game.score++;
     DOM.gameScore.textContent = State.game.score;
 
-    const elapsed = (Date.now() - (gameActiveWords[0]?.startTime || Date.now())) / 60000 || 0.1;
-    DOM.gameWpm.textContent = Math.round(State.game.score / elapsed) || State.game.score;
+    // Game WPM: words scored per minute since the game started
+    // Use session start time (first word spawn time) stored on first spawn
+    if (!State.game.sessionStart) State.game.sessionStart = Date.now();
+    const elapsedMin = (Date.now() - State.game.sessionStart) / 60000;
+    DOM.gameWpm.textContent = elapsedMin > 0 ? Math.round(State.game.score / elapsedMin) : State.game.score;
   }
 
   DOM.gameInput.value = '';
@@ -874,8 +880,8 @@ function renderHistoryTable(results) {
     tr.innerHTML = `
       <td class="wpm-cell">${r.wpm}</td>
       <td class="acc-cell">${r.accuracy}%</td>
-      <td><span class="badge-${r.mode}">${r.mode.toUpperCase()}</span></td>
-      <td>${r.duration}s</td>
+      <td><span class="mode-badge ${r.mode}">${r.mode.toUpperCase()}</span></td>
+      <td>${r.duration > 0 ? r.duration + 's' : '—'}</td>
       <td style="font-size:0.7rem;color:var(--text-dim)">${r.timestamp}</td>
     `;
     DOM.historyTbody.appendChild(tr);
