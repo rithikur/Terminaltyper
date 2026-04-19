@@ -1,5 +1,6 @@
 const $ = id => document.getElementById(id);
 
+// Standard DOM references only — sound removed
 const DOM = {
   // Tabs
   tabStandard:      $('tab-standard'),
@@ -51,9 +52,6 @@ const DOM = {
   statsBest:        $('stats-best-wpm'),
   historyTbody:     $('history-body'),
   analyticsFilter:  $('mode-filter'),
-
-  // Sound
-  soundToggle:      $('sound-toggle'),
 
   // Results
   resultsOverlay:   $('results-overlay'),
@@ -346,14 +344,12 @@ DOM.typingInput.addEventListener('input', e => {
   renderTypingDisplay();
   
   if (val.length >= code.length) {
-    // Only add characters from fully correct sentences to cumulative
-    // (We treat the whole sentence as a block completion here)
-    if (val === code) {
-        State.typing.cumulativeCorrect += code.length + 1;
-        State.typing.input = "";
-        DOM.typingInput.value = "";
-        loadStandardNextSnippet();
-    }
+    // Count correct chars from this completed sentence
+    const sentenceCorrect = countCorrectChars(val.slice(0, code.length), code);
+    State.typing.cumulativeCorrect += sentenceCorrect;
+    State.typing.input = "";
+    DOM.typingInput.value = "";
+    loadStandardNextSnippet();
   }
 });
 
@@ -585,82 +581,8 @@ DOM.typingDisplay.addEventListener('click', () => {
     renderTypingDisplay();
 });
 
-/* ── Audio Engine ─────────────────────────────────── */
-const AudioEngine = {
-  ctx: null,
-  mode: 'none',
-
-  // Called once on the first user gesture to warm up the context
-  warmUp() {
-    if (this.ctx) return;
-    try {
-      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-    } catch(e) { console.warn('Web Audio not supported'); }
-  },
-
-  // Ensure context is running (sync browsers resume it synchronously after gesture)
-  ensureRunning() {
-    if (!this.ctx) this.warmUp();
-    if (this.ctx && this.ctx.state === 'suspended') {
-      this.ctx.resume(); // fire-and-forget is fine here inside a user gesture
-    }
-  },
-
-  play(keyType = 'normal') {
-    if (this.mode === 'none' || !this.ctx) return;
-    if (this.ctx.state === 'suspended') {
-      this.ctx.resume().then(() => this._scheduleSound(keyType));
-      return;
-    }
-    this._scheduleSound(keyType);
-  },
-
-  _scheduleSound(keyType) {
-    try {
-      const t    = this.ctx.currentTime;
-      const osc  = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-      osc.connect(gain);
-      gain.connect(this.ctx.destination);
-
-      if (this.mode === 'clicky') {
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(keyType === 'space' ? 380 : 580, t);
-        osc.frequency.exponentialRampToValueAtTime(80, t + 0.06);
-        gain.gain.setValueAtTime(0.15, t);
-        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
-        osc.start(t);
-        osc.stop(t + 0.06);
-      } else if (this.mode === 'thock') {
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(keyType === 'space' ? 90 : 130, t);
-        osc.frequency.exponentialRampToValueAtTime(25, t + 0.12);
-        gain.gain.setValueAtTime(0.35, t);
-        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
-        osc.start(t);
-        osc.stop(t + 0.12);
-      }
-    } catch(e) { /* ignore if context was closed */ }
-  }
-};
-
-// Create the AudioContext as soon as the user interacts (satisfies browser policy)
-DOM.soundToggle.addEventListener('change', (e) => {
-  AudioEngine.mode = e.target.value;
-  if (e.target.value !== 'none') {
-    AudioEngine.warmUp();          // create context on this user gesture
-    AudioEngine.ensureRunning();   // resume if suspended
-    setTimeout(() => AudioEngine.play('normal'), 50); // preview after tiny delay
-  }
-});
-
+/* ── Key Catcher ─────────────────────────────────── */
 document.addEventListener('keydown', e => {
-  // Sound playback
-  if (e.key.length === 1 || e.key === 'Backspace' || e.key === 'Enter') {
-    AudioEngine.ensureRunning();
-    AudioEngine.play(e.key === ' ' ? 'space' : 'normal');
-  }
-
   if (DOM.capsLockWarn) {
     DOM.capsLockWarn.classList.toggle('show', e.getModifierState('CapsLock'));
   }
@@ -672,7 +594,7 @@ document.addEventListener('keydown', e => {
     }
     if (e.key === 'Tab') { e.preventDefault(); loadStandardContent(); }
   }
-  
+
   if (State.mode === 'code' && State.code.snippet && !State.code.finished) {
     if (isPrintable && document.activeElement !== DOM.codeDisplay) {
       activateCodeTyping();
