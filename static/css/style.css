@@ -45,14 +45,13 @@ html {
 }
 
 body {
-  font-family: var(--font-main);
-  background-color: var(--bg-main);
+  font-family: var(--font-mono);
+  background-color: var(--bg);
   color: var(--text);
   line-height: 1.5;
   min-height: 100vh;
   display: flex;
-  justify-content: center;
-  align-items: center;
+  flex-direction: column;
   text-shadow: 0 0 2px rgba(255, 184, 0, 0.4);
 }
 
