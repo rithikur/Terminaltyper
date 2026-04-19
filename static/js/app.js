@@ -865,6 +865,10 @@ DOM.gameInput.addEventListener('keydown', e => {
 DOM.gameInput.addEventListener('input', highlightTarget);
 
 /* ── Results Overlay ─────────────────────────────── */
+function closeResults() {
+  DOM.resultsOverlay.classList.remove('show');
+}
+
 function showResults(wpm, acc, errors, dur, mode, rawWpm = 0, consistency = 100) {
   DOM.resWpm.textContent         = wpm;
   if (DOM.resRawWpm) DOM.resRawWpm.textContent = rawWpm;
@@ -875,19 +879,27 @@ function showResults(wpm, acc, errors, dur, mode, rawWpm = 0, consistency = 100)
   DOM.resMode.textContent        = mode.toUpperCase();
 
   DOM.resultsOverlay.classList.add('show');
+  // Focus the try-again button so Enter key works immediately
+  setTimeout(() => DOM.btnResRestart.focus(), 100);
 }
 
+// Click on the dark overlay backdrop (not the card) to dismiss
+DOM.resultsOverlay.addEventListener('click', (e) => {
+  if (e.target === DOM.resultsOverlay) closeResults();
+});
+
 DOM.btnResRestart.addEventListener('click', () => {
-  DOM.resultsOverlay.classList.remove('show');
+  closeResults();
   if (State.mode === 'standard') loadStandardContent();
   else if (State.mode === 'code') loadCodeContent();
   else if (State.mode === 'game') startGame();
 });
 
 DOM.btnResAnalytics.addEventListener('click', () => {
-  DOM.resultsOverlay.classList.remove('show');
+  closeResults();
   switchTab('analytics');
 });
+
 
 
 /* ── Analytics ───────────────────────────────────── */
@@ -992,11 +1004,21 @@ function renderChart(results) {
 
 DOM.analyticsFilter.addEventListener('change', loadAnalytics);
 
+/* ── Global Keyboard Shortcuts ───────────────────── */
+document.addEventListener('keydown', e => {
+  // Escape: close results overlay
+  if (e.key === 'Escape') {
+    if (DOM.resultsOverlay.classList.contains('show')) {
+      closeResults();
+      return;
+    }
+  }
+});
 
 /* ── Initialization ──────────────────────────────── */
 window.onload = () => {
   resetTimerOpts();
-  switchTab('standard'); 
+  switchTab('standard');
   loadGameWords();
   loadCodeContent();
 };

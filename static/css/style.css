@@ -714,10 +714,33 @@ h4 {
   align-items: center;
   justify-content: center;
   animation: fadeIn 0.3s ease;
+  cursor: pointer; /* hint that clicking backdrop closes it */
 }
 
 .results-overlay.show {
   display: flex;
+}
+
+/* Prevent card click from propagating to the overlay */
+.results-card {
+  cursor: default;
+}
+
+/* Subtle "ESC to close" hint at top of overlay */
+.results-overlay::before {
+  content: "Press ESC or click outside to dismiss";
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  opacity: 0.6;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 .results-card {
