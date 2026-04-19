@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="{{ theme }}">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description"
+    content="TerminalTyper — A professional Cyber-Industrial typing practice platform. Train your speed and accuracy with Standard, Game, and Code modes." />
+  <meta name="keywords" content="typing speed test, WPM test, typing practice, code typing, typing game" />
+  <title>TerminalTyper | Cyber Industrial Typing Platform</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap"
+    rel="stylesheet" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+
+<body>
+
+  <!-- ═══ HEADER ════════════════════════════════════════════ -->
+  <header class="site-header" role="banner">
+
+    <!-- Row 1: Brand + Controls -->
+    <div class="site-header-top">
+      <div class="logo">
+        <div class="logo-icon" aria-hidden="true">T</div>
+        <div class="logo-text-group">
+          <span class="logo-text">Terminal<span>Typer</span></span>
+          <span class="logo-tagline">Precision Typing. Real-Time Metrics.</span>
+        </div>
+      </div>
+      <div class="header-right flex items-center gap-16">
+        <!-- Sound Toggle -->
+        <select id="sound-toggle" class="sound-select" aria-label="Toggle Keyboard Sound">
+          <option value="none">🔇 Sound: Off</option>
+          <option value="thock">⌨️ Sound: Thock</option>
+          <option value="clicky">⌨️ Sound: Clicky</option>
+        </select>
+      </div>
+      <div class="header-controls">
+        <span class="header-badge">WPM Trainer v2.0</span>
+      </div>
+    </div>
+
+    <!-- Row 2: Nav -->
+    <div class="site-header-nav">
+      <nav class="nav-tabs" role="tablist" aria-label="Typing modes">
+        <button class="nav-tab" role="tab" data-page="standard" id="tab-standard" aria-controls="page-standard">
+          ⚨&nbsp; Standard
+        </button>
+        <button class="nav-tab" role="tab" data-page="game" id="tab-game" aria-controls="page-game">
+          ⚡&nbsp; Game
+        </button>
+        <button class="nav-tab" role="tab" data-page="code" id="tab-code" aria-controls="page-code">
+          &lt;/&gt;&nbsp; Code
+        </button>
+        <button class="nav-tab" role="tab" data-page="analytics" id="tab-analytics" aria-controls="page-analytics">
+          📊&nbsp; Analytics
+        </button>
+      </nav>
+      <span class="header-tags"
+        style="font-size:0.6rem;letter-spacing:0.12em;color:var(--muted);text-transform:uppercase">
+        MonkeyType Metrics ▪&nbsp;Auto-Start ▪&nbsp;Consistency
+      </span>
+    </div>
+
+  </header>
+
+  <!-- ═══ MAIN APP WRAPPER ═════════════════════════════════════ -->
+  <div class="app-wrapper">
+    <div style="height:24px"></div>
+
+    <!-- ══════════════════════════════════════════════
+       PAGE 1 — STANDARD MODE
+  ═══════════════════════════════════════════════ -->
+    <section id="page-standard" class="page" role="tabpanel" aria-labelledby="tab-standard">
+
+      <!-- Top Row: Timer + Live Stats -->
+      <div class="flex gap-16 items-center justify-between mb-24" style="flex-wrap: wrap;">
+
+        <!-- Timer Display -->
+        <div class="card" style="padding:16px 28px;flex-shrink:0">
+          <div class="card-title mb-8" style="margin-bottom:4px">
+            <span class="accent">■</span> TIMER
+          </div>
+          <div id="timer-display" class="timer-display" aria-live="polite" aria-label="Timer">60</div>
+        </div>
+
+        <!-- Live Stats -->
+        <div class="card" style="flex:1;padding:16px 28px">
+          <div class="card-title mb-8"><span class="accent">■</span> LIVE METRICS</div>
+          <div class="live-stats">
+            <div class="live-stat">
+              <div id="live-wpm" class="live-stat-value" aria-label="Words per minute">0</div>
+              <div class="live-stat-label">WPM</div>
+            </div>
+            <div class="live-stat">
+              <div id="live-acc" class="live-stat-value" aria-label="Accuracy">100%</div>
+              <div class="live-stat-label">ACC</div>
+            </div>
+            <div class="live-stat">
+              <div id="live-errors" class="live-stat-value" style="color:var(--orange)" aria-label="Errors">0</div>
+              <div class="live-stat-label">ERR</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Timer Options & Controls -->
+        <div class="card" style="padding:16px 28px;flex-shrink:0">
+          <div class="card-title mb-8"><span class="accent">■</span> DURATION</div>
+          <div class="timer-controls">
+            <button class="timer-option" data-secs="15" aria-pressed="false">15s</button>
+            <button class="timer-option" data-secs="30" aria-pressed="false">30s</button>
+            <button class="timer-option" data-secs="60" aria-pressed="false">60s</button>
+            <button class="timer-option" data-secs="120" aria-pressed="false">120s</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="progress-bar-wrap mb-16">
+        <div id="progress-fill" class="progress-bar-fill" style="width:100%"></div>
+      </div>
+
+      <!-- Caps Lock Warning -->
+      <div id="caps-lock-warn" class="caps-lock-warn" role="alert" aria-live="polite">
+        ⇪ &nbsp;CAPS LOCK IS ON
+      </div>
+
+      <!-- Typing Area -->
+      <div class="typing-container">
+        <div id="typing-display" class="typing-text-display" role="textbox"
+          aria-label="Typing text — press any key to start" tabindex="0">
+          <div id="typing-inner" class="typing-text-inner"></div>
+        </div>
+        <input id="typing-input" class="typing-input" type="text" autocomplete="off" autocorrect="off"
+          autocapitalize="off" spellcheck="false" aria-hidden="true" tabindex="-1" />
+      </div>
+
+      <!-- Action -->
+      <div class="flex gap-8">
+        <button id="btn-restart" class="btn btn-amber">↺ &nbsp;New Text</button>
+      </div>
+
+    </section>
+
+    <!-- ══════════════════════════════════════════════
+       PAGE 2 — GAME MODE
+  ═══════════════════════════════════════════════ -->
+    <section id="page-game" class="page" role="tabpanel" aria-labelledby="tab-game">
+
+      <!-- Stats Bar -->
+      <div class="game-stats-bar mb-16">
+        <div class="game-stat">
+          Score: <span id="game-score" class="game-stat-val">0</span>
+        </div>
+        <div class="game-stat">
+          Missed: <span id="game-missed" class="game-stat-val" style="color:var(--orange)">0</span>
+        </div>
+        <div class="game-stat">
+          WPM: <span id="game-wpm" class="game-stat-val">0</span>
+        </div>
+        <div class="game-stat">
+          Lives:
+          <div id="lives-display" class="lives-display" aria-label="Lives remaining">
+            <div class="life-pip"></div>
+            <div class="life-pip"></div>
+            <div class="life-pip"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Arena -->
+      <div id="game-arena" class="game-arena" aria-label="Game arena — words fall from the top" role="region">
+        <!-- Words spawned dynamically -->
+      </div>
+
+      <!-- Game Input Row -->
+      <div class="game-input-row mt-16">
+        <input id="game-input" class="game-text-input" type="text"
+          placeholder="Type the falling word and press Enter..." autocomplete="off" autocorrect="off"
+          autocapitalize="off" spellcheck="false" disabled aria-label="Type the highlighted word" />
+        <button id="btn-game-start" class="btn btn-amber">▶ &nbsp;Start</button>
+        <button id="btn-game-stop" class="btn btn-orange" style="display:none">■ &nbsp;Stop</button>
+      </div>
+
+      <!-- Info -->
+      <div style="margin-top:12px;font-size:0.7rem;color:var(--text-dim);letter-spacing:0.05em">
+        Type the highlighted word and press <kbd
+          style="border:1px solid var(--border);padding:2px 6px;border-radius:4px">Enter</kbd> or <kbd
+          style="border:1px solid var(--border);padding:2px 6px;border-radius:4px">Space</kbd> to destroy it. Words that
+        reach the bottom cost a life.
+      </div>
+
+    </section>
+
+    <!-- ══════════════════════════════════════════════
+       PAGE 3 — CODE MODE
+  ═══════════════════════════════════════════════ -->
+    <section id="page-code" class="page" role="tabpanel" aria-labelledby="tab-code">
+
+      <!-- Header Row -->
+      <div class="flex items-center justify-between mb-16">
+        <div>
+          <div class="code-label" id="code-label">python · Loading...</div>
+        </div>
+        <div class="flex gap-16" style="align-items:center">
+          <div class="live-stat" style="text-align:right">
+            <div id="code-timer-disp" class="live-stat-value" style="font-size:1.2rem">0s</div>
+            <div class="live-stat-label">TIME</div>
+          </div>
+          <div class="live-stat" style="text-align:right">
+            <div id="code-live-wpm" class="live-stat-value" style="font-size:1.2rem">0</div>
+            <div class="live-stat-label">WPM</div>
+          </div>
+          <div class="live-stat" style="text-align:right">
+            <div id="code-live-acc" class="live-stat-value" style="font-size:1.2rem">100%</div>
+            <div class="live-stat-label">ACC</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Info Banner -->
+      <div
+        style="margin-bottom:12px;font-size:0.7rem;color:var(--text-dim);background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 16px;letter-spacing:0.04em">
+        ⚠ &nbsp;Code mode validates <strong style="color:var(--amber)">indentation</strong>, <strong
+          style="color:var(--amber)">colons</strong>, <strong style="color:var(--amber)">brackets</strong>, and <strong
+          style="color:var(--amber)">symbols</strong> strictly.
+        Use <kbd style="border:1px solid var(--border);padding:1px 5px;border-radius:3px">Tab</kbd> for indentation and
+        <kbd style="border:1px solid var(--border);padding:1px 5px;border-radius:3px">Enter</kbd> for new lines.
+      </div>
+
+      <!-- Code Display -->
+      <div class="typing-container">
+        <div id="code-display" class="code-display" role="textbox" aria-label="Code snippet — click to start typing"
+          tabindex="0">
+          <!-- Rendered by JS -->
+        </div>
+        <textarea id="code-input" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px"
+          autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" tabindex="-1"
+          aria-hidden="true"></textarea>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex gap-8 mt-16">
+        <button id="btn-code-restart" class="btn btn-amber">↺ &nbsp;New Snippet</button>
+      </div>
+
+    </section>
+
+    <!-- ══════════════════════════════════════════════
+       PAGE 4 — ANALYTICS
+  ═══════════════════════════════════════════════ -->
+    <section id="page-analytics" class="page" role="tabpanel" aria-labelledby="tab-analytics">
+
+      <h1 style="font-size:1.4rem;font-weight:700;margin-bottom:4px">
+        Performance <span style="color:var(--amber)">Analytics</span>
+      </h1>
+      <p style="font-size:0.75rem;color:var(--text-dim);margin-bottom:24px;letter-spacing:0.04em">
+        Your typing history and performance trends
+      </p>
+
+      <!-- Filter + Stats -->
+      <div class="flex items-center justify-between mb-16" style="flex-wrap:wrap;gap:12px">
+        <div class="stats-row" style="flex:1;min-width:0">
+          <div class="stat-card">
+            <div id="stats-best-wpm" class="stat-value">—</div>
+            <div class="stat-label">Personal Best WPM</div>
+          </div>
+          <div class="stat-card">
+            <div id="stats-avg-wpm" class="stat-value">—</div>
+            <div class="stat-label">Average WPM</div>
+          </div>
+          <div class="stat-card">
+            <div id="stats-avg-acc" class="stat-value">—</div>
+            <div class="stat-label">Avg Accuracy</div>
+          </div>
+          <div class="stat-card">
+            <div id="stats-sessions" class="stat-value">—</div>
+            <div class="stat-label">Total Sessions</div>
+          </div>
+        </div>
+
+        <div style="flex-shrink:0">
+          <label for="mode-filter" class="sr-only">Filter by mode</label>
+          <select id="mode-filter"
+            style="font-family:var(--font-mono);font-size:0.75rem;background:var(--bg-card);border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:var(--radius-pill);cursor:pointer;outline:none">
+            <option value="all">All Modes</option>
+            <option value="standard">Standard</option>
+            <option value="game">Game</option>
+            <option value="code">Code</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Charts + Table -->
+      <div class="analytics-grid">
+
+        <!-- Trend Chart -->
+        <div class="chart-container" style="grid-column:1/-1">
+          <div class="chart-title"><span style="color:var(--amber)">■</span> WPM &amp; Accuracy Trend — Last 10 Sessions
+          </div>
+          <canvas id="trend-chart" height="120" aria-label="WPM and Accuracy trend chart"></canvas>
+        </div>
+
+        <!-- History Table -->
+        <div class="chart-container" style="grid-column:1/-1">
+          <div class="chart-title"><span style="color:var(--amber)">■</span> Session History</div>
+          <div style="overflow-x:auto">
+            <table class="history-table" aria-label="Session history">
+              <thead>
+                <tr>
+                  <th>WPM</th>
+                  <th>Accuracy</th>
+                  <th>Mode</th>
+                  <th>Duration</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody id="history-body">
+                <tr>
+                  <td colspan="5" style="text-align:center;color:var(--text-dim);padding:24px">
+                    No sessions yet. Start typing!
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </div>
+  <!-- end .app-wrapper -->
+
+  <!-- ═══ RESULTS OVERLAY ═══════════════════════════ -->
+  <div id="results-overlay" class="results-overlay" role="dialog" aria-modal="true" aria-labelledby="res-wpm">
+
+    <div class="results-card">
+      <div
+        style="font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px">
+        ⬢ &nbsp;Session Complete
+      </div>
+
+      <div id="res-wpm" class="results-wpm" aria-label="Words per minute">0</div>
+      <div class="results-label">words per minute</div>
+
+      <div class="results-grid">
+        <div class="result-item">
+          <div id="res-raw-wpm" class="result-item-value" style="color:var(--text-dim)">0</div>
+          <div class="result-item-label">Raw WPM</div>
+        </div>
+        <div class="result-item">
+          <div id="res-accuracy" class="result-item-value">100%</div>
+          <div class="result-item-label">Accuracy</div>
+        </div>
+        <div class="result-item">
+          <div id="res-consistency" class="result-item-value" style="color:#4faaff">100%</div>
+          <div class="result-item-label">Consistency</div>
+        </div>
+        <div class="result-item">
+          <div id="res-errors" class="result-item-value">0</div>
+          <div class="result-item-label">Errors</div>
+        </div>
+        <div class="result-item">
+          <div id="res-duration" class="result-item-value">&mdash;</div>
+          <div class="result-item-label">Duration</div>
+        </div>
+        <div class="result-item">
+          <div id="res-mode" class="result-item-value">&mdash;</div>
+          <div class="result-item-label">Mode</div>
+        </div>
+      </div>
+
+      <div class="results-actions">
+        <button id="btn-res-restart" class="btn btn-amber">↺ &nbsp;Try Again</button>
+        <button id="btn-res-analytics" class="btn">📊 &nbsp;Analytics</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══ TOAST ════════════════════════════════════ -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <!-- Main JS -->
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+
+</body>
+
+</html>
